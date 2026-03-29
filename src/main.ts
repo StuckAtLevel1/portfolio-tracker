@@ -10,12 +10,16 @@ import {
   getTransactionsByStockId,
   addTransaction,
   deleteTransaction,
+  getCashBalance,
+  getCashTransactions,
+  addCashTransaction,
+  deleteCashTransaction,
 } from './database';
 import { createPriceProvider } from './services/priceProvider';
 
 const BATCH_SIZE = 8;
 const BATCH_DELAY_MS = 60_000; // 1 minute between batches
-const REFRESH_INTERVAL_MS = 2 * 60_000;
+const REFRESH_INTERVAL_MS = 2 * 60 * 60_000;
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -122,6 +126,11 @@ app.whenReady().then(() => {
   ipcMain.handle('transaction:getByStockId', (_event, stockId) => getTransactionsByStockId(stockId));
   ipcMain.handle('transaction:add', (_event, tx) => addTransaction(tx));
   ipcMain.handle('transaction:delete', (_event, id) => deleteTransaction(id));
+
+  ipcMain.handle('cash:getBalance', () => getCashBalance());
+  ipcMain.handle('cash:getTransactions', () => getCashTransactions());
+  ipcMain.handle('cash:add', (_event, tx) => addCashTransaction(tx));
+  ipcMain.handle('cash:delete', (_event, id) => deleteCashTransaction(id));
 
   createWindow();
 });

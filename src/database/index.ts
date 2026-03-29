@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { app } from 'electron';
-import type { Stock, StockAggregated, Transaction } from '../types/stock';
+import type { Stock, StockAggregated, Transaction, CashTransaction } from '../types/stock';
 
 let db: Database.Database;
 
@@ -41,6 +41,15 @@ function createTables(): void {
       transactionDate TEXT NOT NULL,
       note TEXT DEFAULT '',
       FOREIGN KEY (stockId) REFERENCES stocks(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cash_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL CHECK(type IN ('deposit', 'withdraw')),
+      amount REAL NOT NULL,
+      transactionDate TEXT NOT NULL,
+      note TEXT DEFAULT ''
     )
   `);
 }
@@ -223,4 +232,50 @@ export function deleteTransaction(id: number): void {
   }
 
   db.prepare('DELETE FROM transactions WHERE id = ?').run(id);
+}
+
+// ===== Cash CRUD =====
+
+export function getCashBalance(): number {
+  const row = db.prepare(`
+    SELECT COALESCE(SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END), 0) AS balance
+    FROM cash_transactions
+  `).get() as { balance: number };
+  return row.balance;
+}
+
+export function getCashTransactions(): CashTransaction[] {
+  return db.prepare(
+    'SELECT * FROM cash_transactions ORDER BY transactionDate DESC, id DESC'
+  ).all() as CashTransaction[];
+}
+
+export function addCashTransaction(tx: Omit<CashTransaction, 'id'>): CashTransaction {
+  if (tx.type === 'withdraw') {
+    const balance = getCashBalance();
+    if (tx.amount > balance) {
+      throw new Error(`取出金额(${tx.amount})超过当前现金余额(${balance.toFixed(2)})`);
+    }
+  }
+
+  const stmt = db.prepare(`
+    INSERT INTO cash_transactions (type, amount, transactionDate, note)
+    VALUES (@type, @amount, @transactionDate, @note)
+  `);
+  const result = stmt.run(tx);
+  return { ...tx, id: result.lastInsertRowid as number } as CashTransaction;
+}
+
+export function deleteCashTransaction(id: number): void {
+  const tx = db.prepare('SELECT * FROM cash_transactions WHERE id = ?').get(id) as CashTransaction | undefined;
+  if (!tx) return;
+
+  if (tx.type === 'deposit') {
+    const balanceWithout = getCashBalance() - tx.amount;
+    if (balanceWithout < 0) {
+      throw new Error('删除此存入记录会导致现金余额为负，无法删除');
+    }
+  }
+
+  db.prepare('DELETE FROM cash_transactions WHERE id = ?').run(id);
 }

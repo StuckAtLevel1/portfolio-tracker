@@ -7,7 +7,9 @@ import StockSummary from './components/StockSummary';
 import StockTable from './components/StockTable';
 import StockForm from './components/StockForm';
 import StockDetail from './components/StockDetail';
+import CashPanel from './components/CashPanel';
 import { stockService } from './services/stockService';
+import { cashService } from './services/cashService';
 import type { Stock, StockAggregated, PriceRefreshProgress } from './types/stock';
 
 const { Text } = Typography;
@@ -16,9 +18,19 @@ const App: React.FC = () => {
   const [stocks, setStocks] = useState<StockAggregated[]>([]);
   const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
-  const [view, setView] = useState<'list' | 'detail'>('list');
+  const [view, setView] = useState<'list' | 'detail' | 'cash'>('list');
   const [selectedStock, setSelectedStock] = useState<StockAggregated | null>(null);
   const [refreshProgress, setRefreshProgress] = useState<PriceRefreshProgress | null>(null);
+  const [cashBalance, setCashBalance] = useState(0);
+
+  const loadCashBalance = useCallback(async () => {
+    try {
+      const bal = await cashService.getBalance();
+      setCashBalance(bal);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const loadStocks = useCallback(async () => {
     setLoading(true);
@@ -38,6 +50,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     loadStocks();
+    loadCashBalance();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -92,6 +105,7 @@ const App: React.FC = () => {
     setView('list');
     setSelectedStock(null);
     loadStocks();
+    loadCashBalance();
   };
 
   const renderRefreshStatus = () => {
@@ -143,12 +157,15 @@ const App: React.FC = () => {
               <h1>股票持仓</h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {renderRefreshStatus()}
+                <Button onClick={() => setView('cash')}>
+                  现金管理
+                </Button>
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                   新增股票
                 </Button>
               </div>
             </header>
-            <StockSummary stocks={stocks} />
+            <StockSummary stocks={stocks} cashBalance={cashBalance} />
             <StockTable
               stocks={stocks}
               loading={loading}
@@ -161,11 +178,16 @@ const App: React.FC = () => {
               onSubmit={handleSubmit}
             />
           </>
-        ) : selectedStock ? (
+        ) : view === 'detail' && selectedStock ? (
           <StockDetail
             stock={selectedStock}
             onBack={handleBack}
             onStockUpdated={loadStocks}
+          />
+        ) : view === 'cash' ? (
+          <CashPanel
+            onBack={handleBack}
+            onCashUpdated={loadCashBalance}
           />
         ) : null}
       </div>

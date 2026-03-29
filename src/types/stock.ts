@@ -1,4 +1,5 @@
 export type TransactionType = 'buy' | 'sell' | 'dividend';
+export type CashTransactionType = 'deposit' | 'withdraw';
 
 export interface Transaction {
   id: number;
@@ -39,6 +40,14 @@ export interface PriceQuote {
   price: number;
 }
 
+export interface CashTransaction {
+  id: number;
+  type: CashTransactionType;
+  amount: number;
+  transactionDate: string; // YYYY-MM-DD
+  note: string;
+}
+
 export interface PriceRefreshProgress {
   current: number;
   total: number;
@@ -60,11 +69,19 @@ export interface TransactionAPI {
   delete: (id: number) => Promise<void>;
 }
 
+export interface CashAPI {
+  getBalance: () => Promise<number>;
+  getTransactions: () => Promise<CashTransaction[]>;
+  add: (transaction: Omit<CashTransaction, 'id'>) => Promise<CashTransaction>;
+  delete: (id: number) => Promise<void>;
+}
+
 declare global {
   interface Window {
     electronAPI: {
       stock: StockAPI;
       transaction: TransactionAPI;
+      cash: CashAPI;
       onPriceRefreshProgress: (callback: (progress: PriceRefreshProgress) => void) => () => void;
     };
   }

@@ -12,6 +12,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     add: (tx: unknown) => ipcRenderer.invoke('transaction:add', tx),
     delete: (id: number) => ipcRenderer.invoke('transaction:delete', id),
   },
+  cash: {
+    getBalance: () => ipcRenderer.invoke('cash:getBalance'),
+    getTransactions: () => ipcRenderer.invoke('cash:getTransactions'),
+    add: (tx: unknown) => ipcRenderer.invoke('cash:add', tx),
+    delete: (id: number) => ipcRenderer.invoke('cash:delete', id),
+  },
   onPriceRefreshProgress: (callback: (progress: unknown) => void) => {
     const handler = (_event: unknown, progress: unknown) => callback(progress);
     ipcRenderer.on('price-refresh-progress', handler);

@@ -4,10 +4,11 @@ import type { StockAggregated } from '../types/stock';
 
 interface StockSummaryProps {
   stocks: StockAggregated[];
+  cashBalance: number;
 }
 
-const StockSummary: React.FC<StockSummaryProps> = ({ stocks }) => {
-  const totalMarketValue = stocks.reduce((sum, s) => sum + s.marketValue, 0);
+const StockSummary: React.FC<StockSummaryProps> = ({ stocks, cashBalance }) => {
+  const totalMarketValue = stocks.reduce((sum, s) => sum + s.marketValue, 0) + cashBalance;
   const totalCost = stocks.reduce((sum, s) => sum + s.totalCost, 0);
   const totalUnrealizedPnL = stocks.reduce((sum, s) => sum + s.unrealizedPnL, 0);
   const totalReturn = stocks.reduce((sum, s) => sum + s.totalReturn, 0);
@@ -17,17 +18,22 @@ const StockSummary: React.FC<StockSummaryProps> = ({ stocks }) => {
 
   return (
     <Row gutter={16} style={{ marginBottom: 24 }}>
-      <Col span={6}>
+      <Col span={5}>
         <Card size="small">
           <Statistic title="总市值" value={totalMarketValue} precision={2} prefix="$" />
         </Card>
       </Col>
-      <Col span={6}>
+      <Col span={5}>
         <Card size="small">
           <Statistic title="总成本" value={totalCost} precision={2} prefix="$" />
         </Card>
       </Col>
-      <Col span={6}>
+      <Col span={5}>
+        <Card size="small">
+          <Statistic title="现金" value={cashBalance} precision={2} prefix="$" />
+        </Card>
+      </Col>
+      <Col span={5}>
         <Card size="small">
           <Statistic
             title="浮动盈亏"
@@ -38,7 +44,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ stocks }) => {
           />
         </Card>
       </Col>
-      <Col span={6}>
+      <Col span={4}>
         <Card size="small">
           <Statistic
             title="总收益"
