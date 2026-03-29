@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import {
@@ -10,9 +11,85 @@ import {
   addTransaction,
   deleteTransaction,
 } from './database';
+import { createPriceProvider } from './services/priceProvider';
+
+const BATCH_SIZE = 8;
+const BATCH_DELAY_MS = 60_000; // 1 minute between batches
+const REFRESH_INTERVAL_MS = 2 * 60_000;
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+let mainWindow: BrowserWindow | null = null;
+
+function sendProgress(data: { current: number; total: number; status: string; lastUpdated?: string; error?: string }) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('price-refresh-progress', data);
+  }
+}
+
+async function refreshPricesInBackground() {
+  const apiKey = process.env.TWELVE_DATA_API_KEY;
+  if (!apiKey) {
+    sendProgress({ current: 0, total: 0, status: 'error', error: '未配置 TWELVE_DATA_API_KEY 环境变量' });
+    return;
+  }
+
+  while (true) {
+    try {
+      const stocks = getAllStocksAggregated();
+      if (stocks.length === 0) {
+        sendProgress({ current: 0, total: 0, status: 'done', lastUpdated: new Date().toISOString() });
+        await sleep(REFRESH_INTERVAL_MS);
+        continue;
+      }
+
+      const symbols = stocks.map(s => s.stockCode);
+      const total = symbols.length;
+      const provider = createPriceProvider('twelveData', apiKey);
+
+      for (let i = 0; i < total; i += BATCH_SIZE) {
+        const batch = symbols.slice(i, i + BATCH_SIZE);
+        const fetched = Math.min(i + BATCH_SIZE, total);
+
+        sendProgress({ current: fetched, total, status: 'refreshing' });
+
+        try {
+          const quotes = await provider.fetchPrices(batch);
+          for (const quote of quotes) {
+            const stock = stocks.find(s => s.stockCode === quote.symbol);
+            if (stock) {
+              updateStock({
+                id: stock.id,
+                stockName: stock.stockName,
+                stockCode: stock.stockCode,
+                currentPrice: quote.price,
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Price refresh batch error:', err);
+        }
+
+        // Wait between batches (but not after the last batch)
+        if (i + BATCH_SIZE < total) {
+          await sleep(BATCH_DELAY_MS);
+        }
+      }
+
+      sendProgress({ current: total, total, status: 'done', lastUpdated: new Date().toISOString() });
+    } catch (err) {
+      console.error('Price refresh error:', err);
+      sendProgress({ current: 0, total: 0, status: 'error', error: err instanceof Error ? err.message : '刷新价格失败' });
+    }
+
+    await sleep(REFRESH_INTERVAL_MS);
+  }
+}
 
 const createWindow = () => {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     title: '家庭资产管理',
@@ -28,6 +105,10 @@ const createWindow = () => {
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
     );
   }
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    refreshPricesInBackground();
+  });
 };
 
 app.whenReady().then(() => {

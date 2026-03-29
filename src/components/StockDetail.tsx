@@ -13,7 +13,7 @@ interface StockDetailProps {
 }
 
 const formatCurrency = (value: number) =>
-  `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const StockDetail: React.FC<StockDetailProps> = ({ stock, onBack, onStockUpdated }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -77,7 +77,7 @@ const StockDetail: React.FC<StockDetailProps> = ({ stock, onBack, onStockUpdated
       <Row gutter={16} className="stock-detail-info">
         <Col span={4}>
           <Card size="small">
-            <Statistic title="当前价格" value={stock.currentPrice} precision={2} prefix="¥" />
+            <Statistic title="当前价格" value={stock.currentPrice} precision={2} prefix="$" />
           </Card>
         </Col>
         <Col span={4}>
@@ -87,7 +87,7 @@ const StockDetail: React.FC<StockDetailProps> = ({ stock, onBack, onStockUpdated
         </Col>
         <Col span={4}>
           <Card size="small">
-            <Statistic title="平均成本" value={stock.avgCost} precision={2} prefix="¥" />
+            <Statistic title="平均成本" value={stock.avgCost} precision={2} prefix="$" />
           </Card>
         </Col>
         <Col span={4}>
@@ -96,7 +96,7 @@ const StockDetail: React.FC<StockDetailProps> = ({ stock, onBack, onStockUpdated
               title="浮动盈亏"
               value={stock.unrealizedPnL}
               precision={2}
-              prefix="¥"
+              prefix="$"
               valueStyle={{ color: pnlColor(stock.unrealizedPnL) }}
             />
           </Card>
@@ -107,7 +107,7 @@ const StockDetail: React.FC<StockDetailProps> = ({ stock, onBack, onStockUpdated
               title="已实现盈亏"
               value={stock.realizedPnL}
               precision={2}
-              prefix="¥"
+              prefix="$"
               valueStyle={{ color: pnlColor(stock.realizedPnL) }}
             />
           </Card>
@@ -118,7 +118,7 @@ const StockDetail: React.FC<StockDetailProps> = ({ stock, onBack, onStockUpdated
               title="总收益"
               value={stock.totalReturn}
               precision={2}
-              prefix="¥"
+              prefix="$"
               valueStyle={{ color: pnlColor(stock.totalReturn) }}
             />
           </Card>

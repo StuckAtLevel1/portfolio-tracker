@@ -73,7 +73,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ open, stockId, onCanc
               label="价格"
               rules={[{ required: true, message: '请输入价格' }]}
             >
-              <InputNumber min={0.01} precision={2} step={0.01} style={{ width: '100%' }} prefix="¥" />
+              <InputNumber min={0.01} precision={2} step={0.01} style={{ width: '100%' }} prefix="$" />
             </Form.Item>
             <Form.Item
               name="quantity"
@@ -91,7 +91,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ open, stockId, onCanc
             label="分红金额"
             rules={[{ required: true, message: '请输入分红金额' }]}
           >
-            <InputNumber min={0.01} precision={2} step={1} style={{ width: '100%' }} prefix="¥" />
+            <InputNumber min={0.01} precision={2} step={1} style={{ width: '100%' }} prefix="$" />
           </Form.Item>
         )}
 

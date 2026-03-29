@@ -19,12 +19,12 @@ const StockSummary: React.FC<StockSummaryProps> = ({ stocks }) => {
     <Row gutter={16} style={{ marginBottom: 24 }}>
       <Col span={6}>
         <Card size="small">
-          <Statistic title="总市值" value={totalMarketValue} precision={2} prefix="¥" />
+          <Statistic title="总市值" value={totalMarketValue} precision={2} prefix="$" />
         </Card>
       </Col>
       <Col span={6}>
         <Card size="small">
-          <Statistic title="总成本" value={totalCost} precision={2} prefix="¥" />
+          <Statistic title="总成本" value={totalCost} precision={2} prefix="$" />
         </Card>
       </Col>
       <Col span={6}>
@@ -33,7 +33,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ stocks }) => {
             title="浮动盈亏"
             value={totalUnrealizedPnL}
             precision={2}
-            prefix="¥"
+            prefix="$"
             valueStyle={{ color: unrealizedColor }}
           />
         </Card>
@@ -44,7 +44,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ stocks }) => {
             title="总收益"
             value={totalReturn}
             precision={2}
-            prefix="¥"
+            prefix="$"
             valueStyle={{ color: returnColor }}
           />
         </Card>

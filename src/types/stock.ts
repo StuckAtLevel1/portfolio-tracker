@@ -34,6 +34,19 @@ export interface StockAggregated {
   transactionCount: number;
 }
 
+export interface PriceQuote {
+  symbol: string;
+  price: number;
+}
+
+export interface PriceRefreshProgress {
+  current: number;
+  total: number;
+  status: 'refreshing' | 'done' | 'error';
+  lastUpdated?: string;
+  error?: string;
+}
+
 export interface StockAPI {
   getAll: () => Promise<StockAggregated[]>;
   add: (stock: Omit<Stock, 'id'>) => Promise<Stock>;
@@ -52,6 +65,7 @@ declare global {
     electronAPI: {
       stock: StockAPI;
       transaction: TransactionAPI;
+      onPriceRefreshProgress: (callback: (progress: PriceRefreshProgress) => void) => () => void;
     };
   }
 }

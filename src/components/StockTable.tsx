@@ -12,7 +12,7 @@ interface StockTableProps {
 }
 
 const formatCurrency = (value: number) =>
-  `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const StockTable: React.FC<StockTableProps> = ({ stocks, loading, onRowClick, onDelete }) => {
   const columns: ColumnsType<StockAggregated> = [

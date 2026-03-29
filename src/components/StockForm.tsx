@@ -61,7 +61,7 @@ const StockForm: React.FC<StockFormProps> = ({ open, onCancel, onSubmit, initial
           label="当前价格"
           rules={[{ required: true, message: '请输入当前价格' }]}
         >
-          <InputNumber min={0} precision={2} step={0.01} style={{ width: '100%' }} prefix="¥" />
+          <InputNumber min={0} precision={2} step={0.01} style={{ width: '100%' }} prefix="$" />
         </Form.Item>
       </Form>
     </Modal>

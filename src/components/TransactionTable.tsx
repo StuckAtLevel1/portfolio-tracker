@@ -11,7 +11,7 @@ interface TransactionTableProps {
 }
 
 const formatCurrency = (value: number) =>
-  `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const typeLabels: Record<string, { text: string; color: string }> = {
   buy: { text: '买入', color: 'red' },

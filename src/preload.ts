@@ -12,4 +12,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     add: (tx: unknown) => ipcRenderer.invoke('transaction:add', tx),
     delete: (id: number) => ipcRenderer.invoke('transaction:delete', id),
   },
+  onPriceRefreshProgress: (callback: (progress: unknown) => void) => {
+    const handler = (_event: unknown, progress: unknown) => callback(progress);
+    ipcRenderer.on('price-refresh-progress', handler);
+    return () => {
+      ipcRenderer.removeListener('price-refresh-progress', handler);
+    };
+  },
 });

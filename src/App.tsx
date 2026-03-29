@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ConfigProvider, Button, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { ConfigProvider, Button, message, Progress, Typography } from 'antd';
+import { PlusOutlined, SyncOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import zhCN from 'antd/locale/zh_CN';
 import 'dayjs/locale/zh-cn';
 import StockSummary from './components/StockSummary';
@@ -8,7 +8,9 @@ import StockTable from './components/StockTable';
 import StockForm from './components/StockForm';
 import StockDetail from './components/StockDetail';
 import { stockService } from './services/stockService';
-import type { Stock, StockAggregated } from './types/stock';
+import type { Stock, StockAggregated, PriceRefreshProgress } from './types/stock';
+
+const { Text } = Typography;
 
 const App: React.FC = () => {
   const [stocks, setStocks] = useState<StockAggregated[]>([]);
@@ -16,6 +18,7 @@ const App: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [selectedStock, setSelectedStock] = useState<StockAggregated | null>(null);
+  const [refreshProgress, setRefreshProgress] = useState<PriceRefreshProgress | null>(null);
 
   const loadStocks = useCallback(async () => {
     setLoading(true);
@@ -35,6 +38,17 @@ const App: React.FC = () => {
 
   useEffect(() => {
     loadStocks();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.onPriceRefreshProgress((progress) => {
+      setRefreshProgress(progress);
+      if (progress.status === 'done') {
+        loadStocks();
+      }
+    });
+    return unsubscribe;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -80,6 +94,46 @@ const App: React.FC = () => {
     loadStocks();
   };
 
+  const renderRefreshStatus = () => {
+    if (!refreshProgress) return null;
+
+    if (refreshProgress.status === 'refreshing') {
+      const percent = refreshProgress.total > 0
+        ? Math.round((refreshProgress.current / refreshProgress.total) * 100)
+        : 0;
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <SyncOutlined spin style={{ color: '#1890ff' }} />
+          <Text type="secondary" style={{ whiteSpace: 'nowrap' }}>
+            正在刷新价格 ({refreshProgress.current}/{refreshProgress.total})
+          </Text>
+          <Progress percent={percent} size="small" style={{ width: 120, marginBottom: 0 }} showInfo={false} />
+        </div>
+      );
+    }
+
+    if (refreshProgress.status === 'done' && refreshProgress.lastUpdated) {
+      const time = new Date(refreshProgress.lastUpdated).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <CheckCircleOutlined style={{ color: '#52c41a' }} />
+          <Text type="secondary">价格已更新 {time}</Text>
+        </div>
+      );
+    }
+
+    if (refreshProgress.status === 'error') {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+          <Text type="danger">{refreshProgress.error || '刷新价格失败'}</Text>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <ConfigProvider locale={zhCN}>
       <div className="app">
@@ -87,9 +141,12 @@ const App: React.FC = () => {
           <>
             <header className="app-header">
               <h1>股票持仓</h1>
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                新增股票
-              </Button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {renderRefreshStatus()}
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+                  新增股票
+                </Button>
+              </div>
             </header>
             <StockSummary stocks={stocks} />
             <StockTable
