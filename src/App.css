@@ -44,3 +44,20 @@ body {
   align-items: center;
   margin-bottom: 16px;
 }
+
+/* Row action buttons: hidden by default, shown on hover */
+.row-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.row-hovered .row-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.row-actions-visible {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}

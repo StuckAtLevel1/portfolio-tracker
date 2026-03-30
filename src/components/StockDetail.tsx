@@ -19,6 +19,7 @@ const StockDetail: React.FC<StockDetailProps> = ({ stock, onBack, onStockUpdated
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const loadTransactions = useCallback(async () => {
     setLoading(true);
@@ -57,6 +58,20 @@ const StockDetail: React.FC<StockDetailProps> = ({ stock, onBack, onStockUpdated
       onStockUpdated();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '删除失败';
+      message.error(msg);
+    }
+  };
+
+  const handleEditTransaction = async (values: Omit<Transaction, 'id'>) => {
+    if (!editingTransaction) return;
+    try {
+      await transactionService.update({ ...values, id: editingTransaction.id });
+      message.success('修改成功');
+      setEditingTransaction(null);
+      loadTransactions();
+      onStockUpdated();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '修改失败';
       message.error(msg);
     }
   };
@@ -136,13 +151,15 @@ const StockDetail: React.FC<StockDetailProps> = ({ stock, onBack, onStockUpdated
         transactions={transactions}
         loading={loading}
         onDelete={handleDeleteTransaction}
+        onEdit={(tx) => setEditingTransaction(tx)}
       />
 
       <TransactionForm
-        open={formOpen}
+        open={formOpen || editingTransaction !== null}
         stockId={stock.id}
-        onCancel={() => setFormOpen(false)}
-        onSubmit={handleAddTransaction}
+        onCancel={() => { setFormOpen(false); setEditingTransaction(null); }}
+        onSubmit={editingTransaction ? handleEditTransaction : handleAddTransaction}
+        initialValues={editingTransaction}
       />
     </div>
   );

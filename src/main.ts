@@ -10,10 +10,12 @@ import {
   getTransactionsByStockId,
   addTransaction,
   deleteTransaction,
+  updateTransaction,
   getCashBalance,
   getCashTransactions,
   addCashTransaction,
   deleteCashTransaction,
+  updateCashTransaction,
 } from './database';
 import { createPriceProvider } from './services/priceProvider';
 
@@ -125,11 +127,13 @@ app.whenReady().then(() => {
 
   ipcMain.handle('transaction:getByStockId', (_event, stockId) => getTransactionsByStockId(stockId));
   ipcMain.handle('transaction:add', (_event, tx) => addTransaction(tx));
+  ipcMain.handle('transaction:update', (_event, tx) => updateTransaction(tx));
   ipcMain.handle('transaction:delete', (_event, id) => deleteTransaction(id));
 
   ipcMain.handle('cash:getBalance', () => getCashBalance());
   ipcMain.handle('cash:getTransactions', () => getCashTransactions());
   ipcMain.handle('cash:add', (_event, tx) => addCashTransaction(tx));
+  ipcMain.handle('cash:update', (_event, tx) => updateCashTransaction(tx));
   ipcMain.handle('cash:delete', (_event, id) => deleteCashTransaction(id));
 
   createWindow();

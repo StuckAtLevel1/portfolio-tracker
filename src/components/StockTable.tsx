@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, Button, Popconfirm, Space } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { StockAggregated } from '../types/stock';
 
@@ -9,13 +9,17 @@ interface StockTableProps {
   loading: boolean;
   onRowClick: (stock: StockAggregated) => void;
   onDelete: (id: number) => void;
+  onEdit: (stock: StockAggregated) => void;
   totalPortfolioValue: number;
 }
 
 const formatCurrency = (value: number) =>
   `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const StockTable: React.FC<StockTableProps> = ({ stocks, loading, onRowClick, onDelete, totalPortfolioValue }) => {
+const StockTable: React.FC<StockTableProps> = ({ stocks, loading, onRowClick, onDelete, onEdit, totalPortfolioValue }) => {
+  const [hoveredRowId, setHoveredRowId] = useState<number | null>(null);
+  const [popconfirmRowId, setPopconfirmRowId] = useState<number | null>(null);
+
   const columns: ColumnsType<StockAggregated> = [
     {
       title: '股票名称',
@@ -90,29 +94,41 @@ const StockTable: React.FC<StockTableProps> = ({ stocks, loading, onRowClick, on
     {
       title: '操作',
       key: 'action',
+      width: 120,
       render: (_, record) => (
-        <Space>
-          <Popconfirm
-            title="确定要删除此股票及所有交易记录吗？"
-            onConfirm={(e) => {
-              e?.stopPropagation();
-              onDelete(record.id);
-            }}
-            onCancel={(e) => e?.stopPropagation()}
-            okText="确定"
-            cancelText="取消"
-          >
+        <div className={`row-actions${popconfirmRowId === record.id ? ' row-actions-visible' : ''}`}>
+          <Space>
             <Button
               type="link"
               size="small"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={(e) => e.stopPropagation()}
+              icon={<EditOutlined />}
+              onClick={(e) => { e.stopPropagation(); onEdit(record); }}
             >
-              删除
+              编辑
             </Button>
-          </Popconfirm>
-        </Space>
+            <Popconfirm
+              title="确定要删除此股票及所有交易记录吗？"
+              onConfirm={(e) => {
+                e?.stopPropagation();
+                onDelete(record.id);
+              }}
+              onCancel={(e) => e?.stopPropagation()}
+              onOpenChange={(open) => setPopconfirmRowId(open ? record.id : null)}
+              okText="确定"
+              cancelText="取消"
+            >
+              <Button
+                type="link"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={(e) => e.stopPropagation()}
+              >
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        </div>
       ),
     },
   ];
@@ -131,6 +147,13 @@ const StockTable: React.FC<StockTableProps> = ({ stocks, loading, onRowClick, on
       onRow={(record) => ({
         onClick: () => onRowClick(record),
         style: { cursor: 'pointer' },
+        className: hoveredRowId === record.id ? 'row-hovered' : '',
+        onMouseEnter: () => setHoveredRowId(record.id),
+        onMouseLeave: () => {
+          if (popconfirmRowId !== record.id) {
+            setHoveredRowId(null);
+          }
+        },
       })}
     />
   );

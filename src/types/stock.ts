@@ -66,6 +66,7 @@ export interface StockAPI {
 export interface TransactionAPI {
   getByStockId: (stockId: number) => Promise<Transaction[]>;
   add: (transaction: Omit<Transaction, 'id'>) => Promise<Transaction>;
+  update: (transaction: Transaction) => Promise<Transaction>;
   delete: (id: number) => Promise<void>;
 }
 
@@ -73,6 +74,7 @@ export interface CashAPI {
   getBalance: () => Promise<number>;
   getTransactions: () => Promise<CashTransaction[]>;
   add: (transaction: Omit<CashTransaction, 'id'>) => Promise<CashTransaction>;
+  update: (transaction: CashTransaction) => Promise<CashTransaction>;
   delete: (id: number) => Promise<void>;
 }
 

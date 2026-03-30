@@ -7,17 +7,27 @@ interface CashFormProps {
   open: boolean;
   onCancel: () => void;
   onSubmit: (values: Omit<CashTransaction, 'id'>) => void;
+  initialValues?: CashTransaction | null;
 }
 
-const CashForm: React.FC<CashFormProps> = ({ open, onCancel, onSubmit }) => {
+const CashForm: React.FC<CashFormProps> = ({ open, onCancel, onSubmit, initialValues }) => {
   const [form] = Form.useForm();
 
   useEffect(() => {
     if (open) {
-      form.resetFields();
-      form.setFieldsValue({ type: 'deposit' });
+      if (initialValues) {
+        form.setFieldsValue({
+          type: initialValues.type,
+          amount: initialValues.amount,
+          transactionDate: dayjs(initialValues.transactionDate),
+          note: initialValues.note,
+        });
+      } else {
+        form.resetFields();
+        form.setFieldsValue({ type: 'deposit' });
+      }
     }
-  }, [open, form]);
+  }, [open, initialValues, form]);
 
   const handleOk = async () => {
     const values = await form.validateFields();
@@ -31,7 +41,7 @@ const CashForm: React.FC<CashFormProps> = ({ open, onCancel, onSubmit }) => {
 
   return (
     <Modal
-      title="现金操作"
+      title={initialValues ? '编辑现金记录' : '现金操作'}
       open={open}
       onOk={handleOk}
       onCancel={onCancel}

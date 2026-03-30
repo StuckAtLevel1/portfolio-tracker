@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const [stocks, setStocks] = useState<StockAggregated[]>([]);
   const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const [editingStock, setEditingStock] = useState<StockAggregated | null>(null);
   const [view, setView] = useState<'list' | 'detail' | 'cash' | 'allocation'>('list');
   const [selectedStock, setSelectedStock] = useState<StockAggregated | null>(null);
   const [refreshProgress, setRefreshProgress] = useState<PriceRefreshProgress | null>(null);
@@ -82,6 +83,18 @@ const App: React.FC = () => {
       loadStocks();
     } catch {
       message.error('删除失败');
+    }
+  };
+
+  const handleEditStock = async (values: Omit<Stock, 'id'>) => {
+    if (!editingStock) return;
+    try {
+      await stockService.update({ ...values, id: editingStock.id });
+      message.success('修改成功');
+      setEditingStock(null);
+      loadStocks();
+    } catch {
+      message.error('修改失败');
     }
   };
 
@@ -180,12 +193,19 @@ const App: React.FC = () => {
               loading={loading}
               onRowClick={handleRowClick}
               onDelete={handleDelete}
+              onEdit={(stock) => setEditingStock(stock)}
               totalPortfolioValue={totalPortfolioValue}
             />
             <StockForm
-              open={formOpen}
-              onCancel={() => setFormOpen(false)}
-              onSubmit={handleSubmit}
+              open={formOpen || editingStock !== null}
+              onCancel={() => { setFormOpen(false); setEditingStock(null); }}
+              onSubmit={editingStock ? handleEditStock : handleSubmit}
+              initialValues={editingStock ? {
+                id: editingStock.id,
+                stockName: editingStock.stockName,
+                stockCode: editingStock.stockCode,
+                currentPrice: editingStock.currentPrice,
+              } : null}
             />
           </>
         ) : view === 'detail' && selectedStock ? (

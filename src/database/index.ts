@@ -235,6 +235,32 @@ export function deleteTransaction(id: number): void {
   db.prepare('DELETE FROM transactions WHERE id = ?').run(id);
 }
 
+export function updateTransaction(tx: Transaction): Transaction {
+  const old = db.prepare('SELECT * FROM transactions WHERE id = ?').get(tx.id) as Transaction | undefined;
+  if (!old) throw new Error('交易记录不存在');
+
+  const remaining = db.prepare(
+    'SELECT * FROM transactions WHERE stockId = ? AND id != ? ORDER BY transactionDate ASC, id ASC'
+  ).all(old.stockId, tx.id) as Transaction[];
+
+  const withUpdated = [...remaining, { ...tx, stockId: old.stockId }]
+    .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate) || a.id - b.id);
+
+  const agg = computeAggregates(withUpdated);
+  if (agg.quantity < 0) {
+    throw new Error('修改后会导致持仓为负，无法保存');
+  }
+
+  db.prepare(`
+    UPDATE transactions SET
+      type = @type, price = @price, quantity = @quantity,
+      amount = @amount, transactionDate = @transactionDate, note = @note
+    WHERE id = @id
+  `).run(tx);
+
+  return tx;
+}
+
 // ===== Cash CRUD =====
 
 export function getCashBalance(): number {
@@ -279,4 +305,25 @@ export function deleteCashTransaction(id: number): void {
   }
 
   db.prepare('DELETE FROM cash_transactions WHERE id = ?').run(id);
+}
+
+export function updateCashTransaction(tx: CashTransaction): CashTransaction {
+  const old = db.prepare('SELECT * FROM cash_transactions WHERE id = ?').get(tx.id) as CashTransaction | undefined;
+  if (!old) throw new Error('现金记录不存在');
+
+  const oldEffect = old.type === 'deposit' ? old.amount : -old.amount;
+  const newEffect = tx.type === 'deposit' ? tx.amount : -tx.amount;
+  const balance = getCashBalance() - oldEffect + newEffect;
+
+  if (balance < 0) {
+    throw new Error('修改后会导致现金余额为负，无法保存');
+  }
+
+  db.prepare(`
+    UPDATE cash_transactions SET
+      type = @type, amount = @amount, transactionDate = @transactionDate, note = @note
+    WHERE id = @id
+  `).run(tx);
+
+  return tx;
 }

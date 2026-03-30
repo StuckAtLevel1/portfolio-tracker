@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, Button, Popconfirm, Tag, Space } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Transaction } from '../types/stock';
 
@@ -8,6 +8,7 @@ interface TransactionTableProps {
   transactions: Transaction[];
   loading: boolean;
   onDelete: (id: number) => void;
+  onEdit: (transaction: Transaction) => void;
 }
 
 const formatCurrency = (value: number) =>
@@ -19,7 +20,10 @@ const typeLabels: Record<string, { text: string; color: string }> = {
   dividend: { text: '分红', color: 'blue' },
 };
 
-const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, loading, onDelete }) => {
+const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, loading, onDelete, onEdit }) => {
+  const [hoveredRowId, setHoveredRowId] = useState<number | null>(null);
+  const [popconfirmRowId, setPopconfirmRowId] = useState<number | null>(null);
+
   const columns: ColumnsType<Transaction> = [
     {
       title: '日期',
@@ -66,20 +70,30 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, loadi
     {
       title: '操作',
       key: 'action',
-      width: 80,
       render: (_, record) => (
-        <Space>
-          <Popconfirm
-            title="确定要删除这条交易记录吗？"
-            onConfirm={() => onDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              删除
+        <div className={`row-actions${popconfirmRowId === record.id ? ' row-actions-visible' : ''}`}>
+          <Space>
+            <Button
+              type="link"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => onEdit(record)}
+            >
+              编辑
             </Button>
-          </Popconfirm>
-        </Space>
+            <Popconfirm
+              title="确定要删除这条交易记录吗？"
+              onConfirm={() => onDelete(record.id)}
+              onOpenChange={(open) => setPopconfirmRowId(open ? record.id : null)}
+              okText="确定"
+              cancelText="取消"
+            >
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        </div>
       ),
     },
   ];
@@ -93,6 +107,15 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, loadi
       pagination={false}
       size="middle"
       locale={{ emptyText: '暂无交易记录' }}
+      onRow={(record) => ({
+        className: hoveredRowId === record.id ? 'row-hovered' : '',
+        onMouseEnter: () => setHoveredRowId(record.id),
+        onMouseLeave: () => {
+          if (popconfirmRowId !== record.id) {
+            setHoveredRowId(null);
+          }
+        },
+      })}
     />
   );
 };

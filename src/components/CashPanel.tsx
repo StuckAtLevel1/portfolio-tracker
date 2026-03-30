@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Card, Table, Tag, Popconfirm, Space, Statistic, message, Typography } from 'antd';
-import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import CashForm from './CashForm';
 import { cashService } from '../services/cashService';
@@ -24,6 +24,9 @@ const CashPanel: React.FC<CashPanelProps> = ({ onBack, onCashUpdated }) => {
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<CashTransaction | null>(null);
+  const [hoveredRowId, setHoveredRowId] = useState<number | null>(null);
+  const [popconfirmRowId, setPopconfirmRowId] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -70,6 +73,20 @@ const CashPanel: React.FC<CashPanelProps> = ({ onBack, onCashUpdated }) => {
     }
   };
 
+  const handleEdit = async (values: Omit<CashTransaction, 'id'>) => {
+    if (!editingTransaction) return;
+    try {
+      await cashService.update({ ...values, id: editingTransaction.id });
+      message.success('修改成功');
+      setEditingTransaction(null);
+      loadData();
+      onCashUpdated();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '修改失败';
+      message.error(msg);
+    }
+  };
+
   const columns: ColumnsType<CashTransaction> = [
     {
       title: '日期',
@@ -103,20 +120,30 @@ const CashPanel: React.FC<CashPanelProps> = ({ onBack, onCashUpdated }) => {
     {
       title: '操作',
       key: 'action',
-      width: 80,
       render: (_, record) => (
-        <Space>
-          <Popconfirm
-            title="确定要删除这条记录吗？"
-            onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              删除
+        <div className={`row-actions${popconfirmRowId === record.id ? ' row-actions-visible' : ''}`}>
+          <Space>
+            <Button
+              type="link"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => setEditingTransaction(record)}
+            >
+              编辑
             </Button>
-          </Popconfirm>
-        </Space>
+            <Popconfirm
+              title="确定要删除这条记录吗？"
+              onConfirm={() => handleDelete(record.id)}
+              onOpenChange={(open) => setPopconfirmRowId(open ? record.id : null)}
+              okText="确定"
+              cancelText="取消"
+            >
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        </div>
       ),
     },
   ];
@@ -151,12 +178,22 @@ const CashPanel: React.FC<CashPanelProps> = ({ onBack, onCashUpdated }) => {
         pagination={false}
         size="middle"
         locale={{ emptyText: '暂无现金记录' }}
+        onRow={(record) => ({
+          className: hoveredRowId === record.id ? 'row-hovered' : '',
+          onMouseEnter: () => setHoveredRowId(record.id),
+          onMouseLeave: () => {
+            if (popconfirmRowId !== record.id) {
+              setHoveredRowId(null);
+            }
+          },
+        })}
       />
 
       <CashForm
-        open={formOpen}
-        onCancel={() => setFormOpen(false)}
-        onSubmit={handleAdd}
+        open={formOpen || editingTransaction !== null}
+        onCancel={() => { setFormOpen(false); setEditingTransaction(null); }}
+        onSubmit={editingTransaction ? handleEdit : handleAdd}
+        initialValues={editingTransaction}
       />
     </div>
   );

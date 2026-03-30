@@ -8,18 +8,30 @@ interface TransactionFormProps {
   stockId: number;
   onCancel: () => void;
   onSubmit: (values: Omit<Transaction, 'id'>) => void;
+  initialValues?: Transaction | null;
 }
 
-const TransactionForm: React.FC<TransactionFormProps> = ({ open, stockId, onCancel, onSubmit }) => {
+const TransactionForm: React.FC<TransactionFormProps> = ({ open, stockId, onCancel, onSubmit, initialValues }) => {
   const [form] = Form.useForm();
   const txType = Form.useWatch('type', form) as TransactionType | undefined;
 
   useEffect(() => {
     if (open) {
-      form.resetFields();
-      form.setFieldsValue({ type: 'buy' });
+      if (initialValues) {
+        form.setFieldsValue({
+          type: initialValues.type,
+          price: initialValues.price,
+          quantity: initialValues.quantity,
+          amount: initialValues.amount,
+          transactionDate: dayjs(initialValues.transactionDate),
+          note: initialValues.note,
+        });
+      } else {
+        form.resetFields();
+        form.setFieldsValue({ type: 'buy' });
+      }
     }
-  }, [open, form]);
+  }, [open, initialValues, form]);
 
   const handleOk = async () => {
     const values = await form.validateFields();
@@ -45,7 +57,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ open, stockId, onCanc
 
   return (
     <Modal
-      title="添加交易"
+      title={initialValues ? '编辑交易' : '添加交易'}
       open={open}
       onOk={handleOk}
       onCancel={onCancel}
