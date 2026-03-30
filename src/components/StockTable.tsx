@@ -9,12 +9,13 @@ interface StockTableProps {
   loading: boolean;
   onRowClick: (stock: StockAggregated) => void;
   onDelete: (id: number) => void;
+  totalPortfolioValue: number;
 }
 
 const formatCurrency = (value: number) =>
   `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const StockTable: React.FC<StockTableProps> = ({ stocks, loading, onRowClick, onDelete }) => {
+const StockTable: React.FC<StockTableProps> = ({ stocks, loading, onRowClick, onDelete, totalPortfolioValue }) => {
   const columns: ColumnsType<StockAggregated> = [
     {
       title: '股票名称',
@@ -25,22 +26,10 @@ const StockTable: React.FC<StockTableProps> = ({ stocks, loading, onRowClick, on
       ),
     },
     {
-      title: '股票代码',
-      dataIndex: 'stockCode',
-      sorter: (a, b) => a.stockCode.localeCompare(b.stockCode),
-    },
-    {
       title: '当前价格',
       dataIndex: 'currentPrice',
       sorter: (a, b) => a.currentPrice - b.currentPrice,
       render: (val: number) => formatCurrency(val),
-      align: 'right',
-    },
-    {
-      title: '持仓数量',
-      dataIndex: 'quantity',
-      sorter: (a, b) => a.quantity - b.quantity,
-      render: (val: number) => val.toLocaleString('zh-CN'),
       align: 'right',
     },
     {
@@ -55,6 +44,17 @@ const StockTable: React.FC<StockTableProps> = ({ stocks, loading, onRowClick, on
       dataIndex: 'marketValue',
       sorter: (a, b) => a.marketValue - b.marketValue,
       render: (val: number) => formatCurrency(val),
+      align: 'right',
+    },
+    {
+      title: '占比',
+      key: 'allocation',
+      sorter: (a, b) => a.marketValue - b.marketValue,
+      render: (_, record) => {
+        if (totalPortfolioValue === 0) return '0.0%';
+        const pct = (record.marketValue / totalPortfolioValue) * 100;
+        return `${pct.toFixed(1)}%`;
+      },
       align: 'right',
     },
     {
@@ -90,7 +90,6 @@ const StockTable: React.FC<StockTableProps> = ({ stocks, loading, onRowClick, on
     {
       title: '操作',
       key: 'action',
-      width: 80,
       render: (_, record) => (
         <Space>
           <Popconfirm
@@ -127,7 +126,8 @@ const StockTable: React.FC<StockTableProps> = ({ stocks, loading, onRowClick, on
       pagination={false}
       size="middle"
       locale={{ emptyText: '暂无持仓数据' }}
-      scroll={{ x: 1200 }}
+      tableLayout="auto"
+      style={{ whiteSpace: 'nowrap' }}
       onRow={(record) => ({
         onClick: () => onRowClick(record),
         style: { cursor: 'pointer' },

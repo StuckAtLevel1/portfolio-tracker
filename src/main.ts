@@ -94,8 +94,8 @@ async function refreshPricesInBackground() {
 
 const createWindow = () => {
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1400,
+    height: 850,
     title: '家庭资产管理',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

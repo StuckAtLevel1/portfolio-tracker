@@ -163,6 +163,7 @@ export function getAllStocksAggregated(): StockAggregated[] {
     });
   }
 
+  result.sort((a, b) => b.marketValue - a.marketValue);
   return result;
 }
 

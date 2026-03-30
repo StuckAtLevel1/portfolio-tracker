@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ConfigProvider, Button, message, Progress, Typography } from 'antd';
-import { PlusOutlined, SyncOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, PieChartOutlined, SyncOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import zhCN from 'antd/locale/zh_CN';
 import 'dayjs/locale/zh-cn';
 import StockSummary from './components/StockSummary';
@@ -8,6 +8,7 @@ import StockTable from './components/StockTable';
 import StockForm from './components/StockForm';
 import StockDetail from './components/StockDetail';
 import CashPanel from './components/CashPanel';
+import AllocationPage from './components/AllocationPage';
 import { stockService } from './services/stockService';
 import { cashService } from './services/cashService';
 import type { Stock, StockAggregated, PriceRefreshProgress } from './types/stock';
@@ -18,10 +19,15 @@ const App: React.FC = () => {
   const [stocks, setStocks] = useState<StockAggregated[]>([]);
   const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
-  const [view, setView] = useState<'list' | 'detail' | 'cash'>('list');
+  const [view, setView] = useState<'list' | 'detail' | 'cash' | 'allocation'>('list');
   const [selectedStock, setSelectedStock] = useState<StockAggregated | null>(null);
   const [refreshProgress, setRefreshProgress] = useState<PriceRefreshProgress | null>(null);
   const [cashBalance, setCashBalance] = useState(0);
+
+  const totalPortfolioValue = useMemo(
+    () => stocks.reduce((sum, s) => sum + s.marketValue, 0) + cashBalance,
+    [stocks, cashBalance]
+  );
 
   const loadCashBalance = useCallback(async () => {
     try {
@@ -160,6 +166,9 @@ const App: React.FC = () => {
                 <Button onClick={() => setView('cash')}>
                   现金管理
                 </Button>
+                <Button icon={<PieChartOutlined />} onClick={() => setView('allocation')}>
+                  资产分布
+                </Button>
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                   新增股票
                 </Button>
@@ -171,6 +180,7 @@ const App: React.FC = () => {
               loading={loading}
               onRowClick={handleRowClick}
               onDelete={handleDelete}
+              totalPortfolioValue={totalPortfolioValue}
             />
             <StockForm
               open={formOpen}
@@ -188,6 +198,12 @@ const App: React.FC = () => {
           <CashPanel
             onBack={handleBack}
             onCashUpdated={loadCashBalance}
+          />
+        ) : view === 'allocation' ? (
+          <AllocationPage
+            stocks={stocks}
+            cashBalance={cashBalance}
+            onBack={handleBack}
           />
         ) : null}
       </div>
